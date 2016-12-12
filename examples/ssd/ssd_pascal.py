@@ -312,6 +312,7 @@ min_dim = 300
 # conv8_2 ==> 3 x 3
 # conv9_2 ==> 1 x 1
 mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'conv9_2']
+mbox_source_layers_c = [mbox_lr+'_c' for mbox_lr in mbox_source_layers]
 # in percent %
 min_ratio = 20
 max_ratio = 90
@@ -445,7 +446,9 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 
 AddExtraLayers(net, use_batchnorm, lr_mult=lr_mult)
 
-mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers,
+add_contextual_layers(from_layers=mbox_source_layers)
+
+mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers_c,
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
         aspect_ratios=aspect_ratios, steps=steps, normalizations=normalizations,
         num_classes=num_classes, share_location=share_location, flip=flip, clip=clip,
@@ -474,15 +477,9 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 
 AddExtraLayers(net, use_batchnorm, lr_mult=lr_mult)
 
-print 'mbox_source_layers before: ', str(mbox_source_layers)
 add_contextual_layers(from_layers=mbox_source_layers)
-mbox_source_layers_c = []
-for mbox_layer in mbox_source_layers:
-    mbox_source_layers_c.append(mbox_layer + '_c')
-mbox_source_layers = mbox_source_layers_c
-print 'mbox_source_layers after: ', str(mbox_source_layers)
 
-mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers,
+mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers_c,
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
         aspect_ratios=aspect_ratios, steps=steps, normalizations=normalizations,
         num_classes=num_classes, share_location=share_location, flip=flip, clip=clip,
