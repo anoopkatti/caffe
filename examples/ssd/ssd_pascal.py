@@ -10,6 +10,14 @@ import stat
 import subprocess
 import sys
 
+def add_contextual_layers(from_layers):
+    for from_lr in from_layers:
+        # add horizontal conv on from_lr -> from_lr_h
+        # add vertical conv on from_lr_h -> from_lr_c1
+        # concat from_lr_c1 with the input layer -> from_lr_c
+        pass
+
+
 # Add extra layers on top of a "base" network (e.g. VGGNet or Inception).
 def AddExtraLayers(net, use_batchnorm=True, lr_mult=1):
     use_relu = True
@@ -465,6 +473,14 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
     dropout=False)
 
 AddExtraLayers(net, use_batchnorm, lr_mult=lr_mult)
+
+print 'mbox_source_layers before: ', str(mbox_source_layers)
+add_contextual_layers(from_layers=mbox_source_layers)
+mbox_source_layers_c = []
+for mbox_layer in mbox_source_layers:
+    mbox_source_layers_c.append(mbox_layer + '_c')
+mbox_source_layers = mbox_source_layers_c
+print 'mbox_source_layers after: ', str(mbox_source_layers)
 
 mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers,
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
