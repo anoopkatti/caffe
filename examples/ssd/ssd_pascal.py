@@ -1,5 +1,6 @@
 from __future__ import print_function
 import caffe
+from caffe import layers as L
 from caffe.model_libs import *
 from google.protobuf import text_format
 
@@ -10,12 +11,31 @@ import stat
 import subprocess
 import sys
 
-def add_contextual_layers(from_layers):
-    for from_lr in from_layers:
+
+def add_contextual_layers(net, from_layers, layer_sizes, use_batchnorm=True, lr_mult=1, use_relu=True):
+    # for reference:
+    # mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'conv9_2']
+    # mbox_source_layers_sz = [38, 19, 10, 5, 3, 1]
+    for idx, (from_lr, lr_sz) in enumerate(zip(from_layers, layer_sizes)):
+        if idx > 2:
+            break
+
         # add horizontal conv on from_lr -> from_lr_h
+        in_layer = from_lr
+        out_layer = from_lr+"_h"
+        ConvBNLayer(net, from_lr, out_layer, use_batchnorm, use_relu, 256, [1,lr_sz+1], [0,lr_sz/2], 1,
+                    lr_mult=lr_mult)
+
         # add vertical conv on from_lr_h -> from_lr_c1
+        in_layer = out_layer
+        out_layer = from_lr+"_c1"
+        ConvBNLayer(net, in_layer, out_layer, use_batchnorm, use_relu, 256, [lr_sz+1,1], [lr_sz/2,0], 1,
+                    lr_mult=lr_mult)
+
         # concat from_lr_c1 with the input layer -> from_lr_c
-        pass
+        in_layer = out_layer
+        out_layer = from_lr+"_c"
+        net[out_layer] = L.Concat([net[from_lr], net[in_layer]])
 
 
 # Add extra layers on top of a "base" network (e.g. VGGNet or Inception).
@@ -312,6 +332,7 @@ min_dim = 300
 # conv8_2 ==> 3 x 3
 # conv9_2 ==> 1 x 1
 mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'conv9_2']
+mbox_source_layers_sz = [38, 19, 10, 5, 3, 1]
 mbox_source_layers_c = [mbox_lr+'_c' for mbox_lr in mbox_source_layers]
 # in percent %
 min_ratio = 20
@@ -446,7 +467,8 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 
 AddExtraLayers(net, use_batchnorm, lr_mult=lr_mult)
 
-add_contextual_layers(from_layers=mbox_source_layers)
+add_contextual_layers(net, from_layers=mbox_source_layers, layer_sizes=mbox_source_layers_sz,
+                      use_batchnorm=use_batchnorm, lr_mult=lr_mult, use_relu=True
 
 mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers_c,
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
@@ -477,7 +499,8 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 
 AddExtraLayers(net, use_batchnorm, lr_mult=lr_mult)
 
-add_contextual_layers(from_layers=mbox_source_layers)
+add_contextual_layers(net, from_layers=mbox_source_layers, layer_sizes=mbox_source_layers_sz,
+                      use_batchnorm=use_batchnorm, lr_mult=lr_mult, use_relu=True
 
 mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers_c,
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
