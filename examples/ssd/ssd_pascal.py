@@ -19,6 +19,8 @@ def add_contextual_layers(net, from_layers, layer_sizes, use_batchnorm=True, lr_
     for idx, (from_lr, lr_sz) in enumerate(zip(from_layers, layer_sizes)):
         if idx > 2:
             break
+        if lr_sz % 2 == 1:
+            lr_sz = lr_sz - 1
 
         # add horizontal conv on from_lr -> from_lr_h
         in_layer = from_lr
