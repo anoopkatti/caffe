@@ -35,7 +35,10 @@ def add_contextual_layers(net, from_layers, layer_sizes, use_batchnorm=True, lr_
         # concat from_lr_c1 with the input layer -> from_lr_c
         in_layer = out_layer
         out_layer = from_lr+"_c"
-        net[out_layer] = L.Concat([net[from_lr], net[in_layer]])
+        concat_list = [net[from_lr], net[in_layer]]
+        net[out_layer] = L.Concat(*concat_list)
+
+    return net
 
 
 # Add extra layers on top of a "base" network (e.g. VGGNet or Inception).
@@ -333,7 +336,12 @@ min_dim = 300
 # conv9_2 ==> 1 x 1
 mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'conv9_2']
 mbox_source_layers_sz = [38, 19, 10, 5, 3, 1]
-mbox_source_layers_c = [mbox_lr+'_c' for mbox_lr in mbox_source_layers]
+mbox_source_layers_c = []
+for idx, mbox_lr in enumerate(mbox_source_layers):
+    if idx <= 2:
+        mbox_source_layers_c.append(mbox_lr+'_c')
+    else:
+        mbox_source_layers_c.append(mbox_lr)
 # in percent %
 min_ratio = 20
 max_ratio = 90
@@ -468,7 +476,7 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 AddExtraLayers(net, use_batchnorm, lr_mult=lr_mult)
 
 add_contextual_layers(net, from_layers=mbox_source_layers, layer_sizes=mbox_source_layers_sz,
-                      use_batchnorm=use_batchnorm, lr_mult=lr_mult, use_relu=True
+                      use_batchnorm=use_batchnorm, lr_mult=lr_mult, use_relu=True)
 
 mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers_c,
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
@@ -500,7 +508,7 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 AddExtraLayers(net, use_batchnorm, lr_mult=lr_mult)
 
 add_contextual_layers(net, from_layers=mbox_source_layers, layer_sizes=mbox_source_layers_sz,
-                      use_batchnorm=use_batchnorm, lr_mult=lr_mult, use_relu=True
+                      use_batchnorm=use_batchnorm, lr_mult=lr_mult, use_relu=True)
 
 mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers_c,
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
